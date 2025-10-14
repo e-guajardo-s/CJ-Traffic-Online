@@ -1,0 +1,1 @@
+# This file provides documentation or notes related to the assets used in the project.

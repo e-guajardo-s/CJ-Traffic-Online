@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Visor de semáforos en tiempo real</title>
+  <link rel="stylesheet" href="./styles/dashboard.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="anonymous" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand">
+      <img class="logo" src="./assets/logo.png" alt="CJ Traffic Chile" />
+      <span class="app-title">Panel</span>
+    </div>
+
+    <!-- NUEVO reemplazo: buscador con lista rectangular propia -->
+    <div class="header-search">
+      <input id="signalSearch" type="text" placeholder="Buscar semáforo..."
+             aria-label="Buscar semáforo" autocomplete="off" />
+      <div id="signalSuggestions" class="signal-suggestions" hidden></div>
+    </div>
+
+    <div class="user-area">
+      <span id="user-email" class="user-email"></span>
+      <button id="logout" class="btn-out" type="button">Cerrar sesión</button>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <div id="map" role="region" aria-label="Mapa de calles"></div>
+    <div class="map-attrib" aria-hidden="true">© OpenStreetMap contributors · Tiles © CARTO</div>
+
+    <!-- Overlay sobre el mapa -->
+    <aside id="mapMenu" class="map-menu" aria-hidden="true">
+      <header class="map-menu-header">
+        <h3 class="map-menu-title">Av. Raúl Labbé con Av. La Dehesa</h3>
+        <button id="mapMenuClose" class="map-menu-close" type="button" aria-label="Cerrar">×</button>
+      </header>
+      <div class="map-menu-body"></div>
+    </aside>
+  </main>
+
+  <!-- Botón flotante y panel lateral que EMPUJA el mapa -->
+  <button id="menuToggle" class="side-toggle" aria-label="Abrir menú" aria-controls="sideMenu" aria-expanded="false" type="button" title="Menú">
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+      <path fill="currentColor" d="M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+    </svg>
+  </button>
+
+  <aside id="sideMenu" class="side-panel" aria-hidden="true">
+    <div class="side-content">
+      <section class="panel-section">
+        <h3>Estadísticas Generales</h3>
+        <div class="panel-card stats">
+          <div class="row"><span>Total de Semáforos:</span><strong id="st-total">0</strong></div>
+          <div class="row"><span>Operativos:</span><strong id="st-operativos" class="c-green">0</strong></div>
+          <div class="row"><span>Con Alerta:</span><strong id="st-alerta" class="c-red">0</strong></div>
+          <div class="row"><span>Con Anomalías:</span><strong id="st-anomalia" class="c-orange">0</strong></div>
+          <div class="row"><span>Mantenimiento:</span><strong id="st-mant" class="c-purple">0</strong></div>
+        </div>
+      </section>
+
+      <section class="panel-section">
+        <h3>Leyenda de Estados</h3>
+        <div class="panel-card">
+          <ul class="legend">
+            <li><span class="dot dot-green"></span>Operativo</li>
+            <li><span class="dot dot-red"></span>Falla - Sin Conexión</li>
+            <li><span class="dot dot-yellow"></span>Con Anomalía</li>
+            <li><span class="dot dot-purple"></span>Mantenimiento</li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="panel-section">
+        <h3>Filtros</h3>
+        <div class="panel-card">
+          <div class="sub-title">Por Estado</div>
+
+          <label class="chk">
+            <input type="checkbox" id="f-operativo" checked />
+            <span class="box"></span><span>Operativo</span>
+          </label>
+
+          <label class="chk">
+            <input type="checkbox" id="f-falla" />
+            <span class="box"></span><span>Fuera de Servicio</span>
+          </label>
+
+          <label class="chk">
+            <input type="checkbox" id="f-anomalia" />
+            <span class="box"></span><span>Con Anomalías</span>
+          </label>
+
+          <label class="chk">
+            <input type="checkbox" id="f-mant" />
+            <span class="box"></span><span>En Mantenimiento</span>
+          </label>
+
+          <div class="sub-title">Por Zona</div>
+          <div class="select">
+            <select id="f-zona">
+              <option value="all">Todas las Zonas</option>
+            </select>
+          </div>
+        </div>
+      </section>
+    </div>
+  </aside>
+
+  <footer class="app-footer">© 2025 CJ Traffic.</footer>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="anonymous"></script>
+  <script src="./scripts/dashboard.js"></script>
+</body>
+</html>
