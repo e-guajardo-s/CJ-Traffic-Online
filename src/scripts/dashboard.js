@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const mapMenuClose = document.getElementById('mapMenuClose');
   const mapMenuBody = mapMenu?.querySelector('.map-menu-body');
   const openMapMenu = (html) => {
-    if (mapMenuBody) mapMenuBody.innerHTML = html;
+    if (mapMenuBody) mapMenuBody.innerHTML = html; // insertar contenido del overlay
     mapMenu?.classList.add('show');
     mapMenu?.setAttribute('aria-hidden', 'false');
   };
@@ -78,173 +78,61 @@ document.addEventListener('DOMContentLoaded', () => {
     // Overlay con tabla y círculos verdes centrados
     const html = `
       <div class="signal-table-wrapper">
-      <div class="signal-overall-status">Estado: Operativo</div>
-      <p>
-        <strong>ID:</strong> #34<br>
-        <strong>UOCT:</strong> J055331<br>
-        <strong>RED:</strong> J055<br>
-        <strong>CONTROLADOR:</strong> Siemens ST950
-      </p>
-    <div class="signal-table-wrapper">
-      <table class="signal-table">
-        <thead>
-          <tr>
-            <th>Controlador</th>
-            <th>Alimentación</th>
-            <th>UPS</th>
-            <th>Luces</th>
-            <th>UOCT</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><span class="status-dot"></span></td>
-            <td><span class="status-dot"></span></td>
-            <td><span class="status-dot"></span></td>
-            <td><span class="status-dot"></span></td>
-            <td><span class="status-dot"></span></td>
-          </tr>
-        </tbody>
-      </table>
+        <div class="signal-overall-status">Estado: Operativo</div>
+        <p>
+          <strong>ID:</strong> #34<br>
+          <strong>UOCT:</strong> J055331<br>
+          <strong>RED:</strong> J055<br>
+          <strong>CONTROLADOR:</strong> Siemens ST950
+        </p>
+        <div class="signal-table-wrapper">
+          <table class="signal-table">
+            <thead>
+              <tr>
+                <th>Controlador</th>
+                <th>Alimentación</th>
+                <th>UPS</th>
+                <th>Luces</th>
+                <th>UOCT</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="status-dot"></span></td>
+                <td><span class="status-dot"></span></td>
+                <td><span class="status-dot"></span></td>
+                <td><span class="status-dot"></span></td>
+                <td><span class="status-dot"></span></td>
+              </tr>
+            </tbody>
+          </table>
 
-      <div class="signal-status-box">El semaforo esta funcionando en condiciones optimas</div>
+          <div class="signal-status-box">El semáforo está funcionando en condiciones óptimas</div>
 
-      <div style="margin-top:10px; display:flex; flex-direction:column; gap:8px;">
-        <button id="centrarPunto" class="btn-out" type="button">Centrar</button>
-        <button id="reportarFallaBtn" class="btn-out btn-danger" type="button">Reportar Falla</button>
-        <button id="verModificarHojaBtn" class="btn-out" type="button" style="background:#6c757d; color:#fff; border-color:#6c757d;">
-          Ver/Modificar Hoja Diaria
-        </button>
+          <div style="margin-top:10px; display:flex; flex-direction:column; gap:8px;">
+            <button id="centrarPunto" class="btn-out" type="button">Centrar</button>
+            <button id="reportarFallaBtn" class="btn-out btn-danger" type="button">Reportar Falla</button>
+            <button id="verModificarHojaBtn" class="btn-out" type="button" style="background:#6c757d; color:#fff; border-color:#6c757d;">
+              Ver/Modificar Hoja Diaria
+            </button>
+          </div>
+        </div>
       </div>
-    </div>
-  `;
+    `;
     openMapMenu(html);
 
+    // Adjuntar handlers a los botones del overlay
     setTimeout(() => {
       document.getElementById('centrarPunto')
         ?.addEventListener('click', () => map.setView(punto, 18, { animate: true }));
 
-      const fallaBtn = document.getElementById('reportarFallaBtn');
-      fallaBtn?.addEventListener('click', () => {
-        if (document.getElementById('fallaModal')) return; // evitar duplicado
-        const modal = document.createElement('div');
-        modal.id = 'fallaModal';
-        modal.className = 'falla-modal';
-        // aquí iría la construcción del modal de falla si aplica
-      });
+      // Restaurado: modal de Reportar Falla
+      document.getElementById('reportarFallaBtn')
+        ?.addEventListener('click', () => openFallaModal('34'));
 
-      // NUEVO: abrir modal Hoja Diaria (PDFs)
-      const hojaBtn = document.getElementById('verModificarHojaBtn');
-      hojaBtn?.addEventListener('click', () => openHojaDiariaModal('34'));
-
-      function openHojaDiariaModal(signalId){
-        // elimina instancia previa
-        document.getElementById('hojaModal')?.remove();
-
-        const modal = document.createElement('div');
-        modal.id = 'hojaModal';
-        modal.className = 'falla-modal';
-        modal.innerHTML = `
-          <div class="falla-modal-box" role="dialog" aria-modal="true" aria-labelledby="hojaTitle">
-            <div class="falla-modal-header" style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
-              <h3 id="hojaTitle" style="margin:0;">Hoja Diaria - #${signalId}</h3>
-              <button type="button" class="btn-out btn-danger btn-close" aria-label="Cerrar">&times;</button>
-            </div>
-            <div class="falla-modal-content">
-              <div class="uploader" style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:8px;">
-                <label class="btn-out" for="pdfInput">Seleccionar PDF(s)</label>
-                <input id="pdfInput" type="file" accept="application/pdf" multiple style="display:none;" />
-                <button id="uploadBtn" class="btn-out">Subir</button>
-              </div>
-
-              <div class="pdf-list-empty" style="margin-top:10px;">No hay PDFs publicados.</div>
-              <ul class="pdf-list" style="margin-top:10px; list-style:none; padding:0;"></ul>
-            </div>
-            <div class="falla-modal-footer" style="margin-top:12px; display:flex; justify-content:flex-end; gap:8px;">
-              <button type="button" class="btn-out" id="closeHoja">Cerrar</button>
-            </div>
-          </div>
-        `;
-        document.body.appendChild(modal);
-
-        const close = () => modal.remove();
-        modal.addEventListener('click', e => { if (e.target === modal) close(); });
-        modal.querySelector('.btn-close')?.addEventListener('click', close);
-        modal.querySelector('#closeHoja')?.addEventListener('click', close);
-
-        const key = `hojaDiariaDocs_${signalId}`;
-        const load = () => { try { return JSON.parse(localStorage.getItem(key) || '[]'); } catch { return []; } };
-        const save = (arr) => localStorage.setItem(key, JSON.stringify(arr));
-
-        const listEl = modal.querySelector('.pdf-list');
-        const emptyEl = modal.querySelector('.pdf-list-empty');
-
-        function render(){
-          const items = load();
-          if (!items.length){
-            emptyEl.style.display = '';
-            listEl.innerHTML = '';
-            return;
-          }
-          emptyEl.style.display = 'none';
-          listEl.innerHTML = items.map((it, idx) => `
-            <li data-idx="${idx}" style="display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px; border:1px solid #e5e7eb; border-radius:6px; margin-bottom:6px;">
-              <div style="display:flex; flex-direction:column;">
-                <strong>${it.name}</strong>
-                <small>${(it.size/1024).toFixed(1)} KB · ${new Date(it.addedAt).toLocaleString()}</small>
-              </div>
-              <div style="display:flex; gap:6px;">
-                <a class="btn-out" href="${it.dataUrl}" download="${it.name}" target="_blank" rel="noopener">Descargar</a>
-                <button class="btn-out btn-danger del">Eliminar</button>
-              </div>
-            </li>
-          `).join('');
-        }
-
-        render();
-
-        listEl.addEventListener('click', e => {
-          const delBtn = e.target.closest('.del');
-          if (!delBtn) return;
-          const li = delBtn.closest('li');
-          const idx = parseInt(li.dataset.idx, 10);
-          const arr = load();
-          arr.splice(idx, 1);
-          save(arr);
-          render();
-        });
-
-        const input = modal.querySelector('#pdfInput');
-        const uploadBtn = modal.querySelector('#uploadBtn');
-        let selectedFiles = [];
-
-        input.addEventListener('change', () => {
-          selectedFiles = Array.from(input.files || []);
-        });
-
-        uploadBtn.addEventListener('click', async () => {
-          if (!selectedFiles.length){ alert('Selecciona uno o más PDFs.'); return; }
-          const arr = load();
-          for (const file of selectedFiles){
-            if (file.type !== 'application/pdf') continue;
-            const dataUrl = await fileToDataUrl(file);
-            arr.push({ name: file.name, size: file.size, addedAt: Date.now(), dataUrl });
-          }
-          save(arr);
-          selectedFiles = [];
-          input.value = '';
-          render();
-        });
-
-        function fileToDataUrl(file){
-          return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result);
-            reader.onerror = reject;
-            reader.readAsDataURL(file);
-          });
-        }
-      }
+      // Nuevo: modal para Hoja Diaria (PDFs)
+      document.getElementById('verModificarHojaBtn')
+        ?.addEventListener('click', () => openHojaDiariaModal('34'));
     }, 0);
   });
 
@@ -397,3 +285,162 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   })();
 });
+
+// Helpers de modales
+function openFallaModal(signalId){
+  if (document.getElementById('fallaModal')) return;
+  const modal = document.createElement('div');
+  modal.id = 'fallaModal';
+  modal.className = 'falla-modal';
+  modal.innerHTML = `
+    <div class="falla-modal-box" role="dialog" aria-modal="true" aria-labelledby="fallaTitle">
+      <div class="falla-modal-header" style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+        <h3 id="fallaTitle" style="margin:0;">Reportar Falla - #${signalId}</h3>
+        <button type="button" class="btn-out btn-danger btn-close" aria-label="Cerrar">&times;</button>
+      </div>
+      <form class="falla-modal-content" id="fallaForm">
+        <label style="display:block; margin-bottom:6px;">
+          <span style="display:block; margin-bottom:4px;">Nombre</span>
+          <input id="fallaNombre" type="text" class="input" required style="width:100%;" />
+        </label>
+        <label style="display:block; margin-bottom:6px;">
+          <span style="display:block; margin-bottom:4px;">Asunto</span>
+          <input id="fallaAsunto" type="text" class="input" required style="width:100%;" />
+        </label>
+        <label style="display:block; margin-bottom:6px;">
+          <span style="display:block; margin-bottom:4px;">Descripción</span>
+          <textarea id="fallaDesc" required rows="4" class="input" style="width:100%;"></textarea>
+        </label>
+        <div class="falla-modal-footer" style="margin-top:12px; display:flex; justify-content:flex-end; gap:8px;">
+          <button type="button" class="btn-out" id="cancelFalla">Cancelar</button>
+          <button type="submit" class="btn-out btn-danger">Reportar</button>
+        </div>
+      </form>
+    </div>
+  `;
+  document.body.appendChild(modal);
+
+  const close = () => modal.remove();
+  modal.addEventListener('click', e => { if (e.target === modal) close(); });
+  modal.querySelector('.btn-close')?.addEventListener('click', close);
+  modal.querySelector('#cancelFalla')?.addEventListener('click', close);
+
+  const form = modal.querySelector('#fallaForm');
+  form?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const nombre = form.querySelector('#fallaNombre').value.trim();
+    const asunto = form.querySelector('#fallaAsunto').value.trim();
+    const desc = form.querySelector('#fallaDesc').value.trim();
+    if (!nombre || !asunto || !desc) { alert('Completa todos los campos.'); return; }
+    alert('Falla reportada.');
+    close();
+  });
+}
+
+function openHojaDiariaModal(signalId){
+  document.getElementById('hojaModal')?.remove(); // limpiar instancia previa
+  const modal = document.createElement('div');
+  modal.id = 'hojaModal';
+  modal.className = 'falla-modal';
+  modal.innerHTML = `
+    <div class="falla-modal-box" role="dialog" aria-modal="true" aria-labelledby="hojaTitle">
+      <div class="falla-modal-header" style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+        <h3 id="hojaTitle" style="margin:0;">Hoja Diaria - #${signalId}</h3>
+        <button type="button" class="btn-out btn-danger btn-close" aria-label="Cerrar">&times;</button>
+      </div>
+      <div class="falla-modal-content">
+        <div class="uploader" style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:8px;">
+          <label class="btn-out" for="pdfInput">Seleccionar PDF(s)</label>
+          <input id="pdfInput" type="file" accept="application/pdf" multiple style="display:none;" />
+          <button id="uploadBtn" class="btn-out">Subir</button>
+        </div>
+
+        <div class="pdf-list-empty" style="margin-top:10px;">No hay PDFs publicados.</div>
+        <ul class="pdf-list" style="margin-top:10px; list-style:none; padding:0;"></ul>
+      </div>
+      <div class="falla-modal-footer" style="margin-top:12px; display:flex; justify-content:flex-end; gap:8px;">
+        <button type="button" class="btn-out" id="closeHoja">Cerrar</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+
+  const close = () => modal.remove();
+  modal.addEventListener('click', e => { if (e.target === modal) close(); });
+  modal.querySelector('.btn-close')?.addEventListener('click', close);
+  modal.querySelector('#closeHoja')?.addEventListener('click', close);
+
+  const key = `hojaDiariaDocs_${signalId}`;
+  const load = () => { try { return JSON.parse(localStorage.getItem(key) || '[]'); } catch { return []; } };
+  const save = (arr) => localStorage.setItem(key, JSON.stringify(arr));
+
+  const listEl = modal.querySelector('.pdf-list');
+  const emptyEl = modal.querySelector('.pdf-list-empty');
+
+  function render(){
+    const items = load();
+    if (!items.length){
+      emptyEl.style.display = '';
+      listEl.innerHTML = '';
+      return;
+    }
+    emptyEl.style.display = 'none';
+    listEl.innerHTML = items.map((it, idx) => `
+      <li data-idx="${idx}" style="display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px; border:1px solid #e5e7eb; border-radius:6px; margin-bottom:6px;">
+        <div style="display:flex; flex-direction:column;">
+          <strong>${it.name}</strong>
+          <small>${(it.size/1024).toFixed(1)} KB · ${new Date(it.addedAt).toLocaleString()}</small>
+        </div>
+        <div style="display:flex; gap:6px;">
+          <a class="btn-out" href="${it.dataUrl}" download="${it.name}" target="_blank" rel="noopener">Descargar</a>
+          <button class="btn-out btn-danger del">Eliminar</button>
+        </div>
+      </li>
+    `).join('');
+  }
+
+  render();
+
+  listEl.addEventListener('click', e => {
+    const delBtn = e.target.closest('.del');
+    if (!delBtn) return;
+    const li = delBtn.closest('li');
+    const idx = parseInt(li.dataset.idx, 10);
+    const arr = load();
+    arr.splice(idx, 1);
+    save(arr);
+    render();
+  });
+
+  const input = modal.querySelector('#pdfInput');
+  const uploadBtn = modal.querySelector('#uploadBtn');
+  let selectedFiles = [];
+
+  input.addEventListener('change', () => {
+    selectedFiles = Array.from(input.files || []);
+  });
+
+  uploadBtn.addEventListener('click', async () => {
+    if (!selectedFiles.length){ alert('Selecciona uno o más PDFs.'); return; }
+    // Nota: localStorage ~5MB total. Para producción usar backend.
+    const arr = load();
+    for (const file of selectedFiles){
+      if (file.type !== 'application/pdf') continue;
+      const dataUrl = await fileToDataUrl(file);
+      arr.push({ name: file.name, size: file.size, addedAt: Date.now(), dataUrl });
+    }
+    save(arr);
+    selectedFiles = [];
+    input.value = '';
+    render();
+  });
+
+  function fileToDataUrl(file){
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+}
