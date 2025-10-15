@@ -2,10 +2,23 @@ document.addEventListener('DOMContentLoaded', () => {
   // Protección
   const email = sessionStorage.getItem('cj_user_email');
   if (!email) { window.location.replace('./index.html'); return; }
-  document.getElementById('user-email')?.append(document.createTextNode(email));
-  document.getElementById('logout')?.addEventListener('click', () => {
-    sessionStorage.removeItem('cj_user_email'); window.location.replace('./index.html');
+
+  const storedName = (sessionStorage.getItem('cj_user_name') || '').trim();
+  const inferName = (em) => {
+    const local = em.split('@')[0];
+    const cleaned = local.replace(/[._-]+/g, ' ').trim();
+    const titled = cleaned.split(' ').filter(Boolean)
+      .map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    return titled || 'Usuario';
+  };
+  const name = storedName || inferName(email);
+
+  // Abrir modal de perfil al click en avatar
+  document.getElementById('openProfile')?.addEventListener('click', () => {
+    openProfileModal(name, email);
   });
+
+  // (si antes seteabas #user-name y #user-email en el header, ya no es necesario)
 
   // Mapa
   const map = L.map('map', { zoomControl: true, attributionControl: false })
@@ -285,6 +298,42 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   })();
 });
+
+// Ventana (modal) de perfil
+function openProfileModal(name, email){
+  document.getElementById('profileModal')?.remove();
+  const modal = document.createElement('div');
+  modal.id = 'profileModal';
+  modal.className = 'falla-modal';
+  modal.innerHTML = `
+    <div class="falla-modal-box" role="dialog" aria-modal="true" aria-labelledby="profileTitle">
+      <div class="falla-modal-header" style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+        <h3 id="profileTitle" style="margin:0;">Perfil</h3>
+        <button type="button" class="btn-out btn-danger btn-close" aria-label="Cerrar">&times;</button>
+      </div>
+      <div class="falla-modal-content" style="display:flex; gap:12px; align-items:center;">
+        <div class="avatar" aria-hidden="true" style="width:56px; height:56px; font-size:28px;">👤</div>
+        <div>
+          <div class="welcome" style="font-weight:600;">Bienvenido, ${name}</div>
+          <div class="user-email" style="color:#6b7280;">${email}</div>
+          <button id="logout" class="btn-out" type="button" style="margin-top:10px;">Cerrar sesión</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+
+  const close = () => modal.remove();
+  modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
+  modal.querySelector('.btn-close')?.addEventListener('click', close);
+
+  // Cerrar sesión desde el modal
+  modal.querySelector('#logout')?.addEventListener('click', () => {
+    sessionStorage.removeItem('cj_user_email');
+    sessionStorage.removeItem('cj_user_name');
+    window.location.replace('./index.html');
+  });
+}
 
 // Helpers de modales
 function openFallaModal(signalId){
