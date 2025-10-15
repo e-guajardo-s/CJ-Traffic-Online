@@ -3,20 +3,21 @@ document.addEventListener('DOMContentLoaded', () => {
   const email = sessionStorage.getItem('cj_user_email');
   if (!email) { window.location.replace('./index.html'); return; }
 
-  const storedName = (sessionStorage.getItem('cj_user_name') || '').trim();
   const inferName = (em) => {
-    const local = em.split('@')[0];
+    const local = (em || '').split('@')[0] || '';
     const cleaned = local.replace(/[._-]+/g, ' ').trim();
-    const titled = cleaned.split(' ').filter(Boolean)
-      .map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-    return titled || 'Usuario';
+    return cleaned.split(' ').filter(Boolean).map(w => w[0]?.toUpperCase() + w.slice(1)).join(' ') || 'Usuario';
   };
+  const storedName = (sessionStorage.getItem('cj_user_name') || '').trim();
   const name = storedName || inferName(email);
 
   // Abrir modal de perfil al click en avatar
-  document.getElementById('openProfile')?.addEventListener('click', () => {
-    openProfileModal(name, email);
-  });
+  const btn = document.getElementById('openProfile');
+  if (btn) {
+    btn.addEventListener('click', () => openProfileModal(name, email));
+  } else {
+    console.warn('No se encontró #openProfile');
+  }
 
   // (si antes seteabas #user-name y #user-email en el header, ya no es necesario)
 
@@ -326,6 +327,7 @@ function openProfileModal(name, email){
   const close = () => modal.remove();
   modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
   modal.querySelector('.btn-close')?.addEventListener('click', close);
+  document.addEventListener('keydown', function esc(e){ if (e.key === 'Escape'){ close(); document.removeEventListener('keydown', esc); }}, { once: true });
 
   // Cerrar sesión desde el modal
   modal.querySelector('#logout')?.addEventListener('click', () => {
