@@ -3,6 +3,29 @@ document.addEventListener('DOMContentLoaded', () => {
   const email = sessionStorage.getItem('cj_user_email');
   if (!email) { window.location.replace('./index.html'); return; }
 
+  // Rol
+  const role = sessionStorage.getItem('cj_user_role') || 'admin';
+  const isMunicipal = role === 'municipal';
+  const isTecnico = role === 'tecnico';
+
+  // Ocultar Hoja Diaria para técnico (menú y botones)
+  if (isTecnico) {
+    // Ítem de menú
+    document.querySelectorAll('[data-nav="hoja-diaria"], .menu-hoja-diaria, #menuHojaDiaria')
+      .forEach(el => el && el.remove());
+
+    // Botones/links que abren Hoja Diaria (marca tus botones con alguno de estos selectores)
+    document.querySelectorAll('[data-action="open-hoja"], .open-hoja, #openHoja')
+      .forEach(el => el && el.remove());
+
+    // Bloqueo defensivo ante clics residuales
+    document.addEventListener('click', (e) => {
+      if (e.target.closest('[data-action="open-hoja"], .open-hoja, #openHoja')) {
+        e.preventDefault(); e.stopPropagation();
+      }
+    }, true);
+  }
+
   const inferName = (em) => {
     const local = (em || '').split('@')[0] || '';
     const cleaned = local.replace(/[._-]+/g, ' ').trim();
@@ -127,7 +150,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <button id="centrarPunto" class="btn-out" type="button">Centrar</button>
             <button id="reportarFallaBtn" class="btn-out btn-danger" type="button">Reportar Falla</button>
             <button id="verModificarHojaBtn" class="btn-out" type="button" style="background:#6c757d; color:#fff; border-color:#6c757d;">
-              Ver/Modificar Hoja Diaria
+              ${isMunicipal ? 'Ver Hoja Diaria' : 'Ver/Modificar Hoja Diaria'}
             </button>
           </div>
         </div>
@@ -389,10 +412,29 @@ function openFallaModal(signalId){
 }
 
 function openHojaDiariaModal(signalId){
-  document.getElementById('hojaModal')?.remove(); // limpiar instancia previa
+  // Bloqueo total para técnico
+  const role = (sessionStorage.getItem('cj_user_role') || 'admin');
+  if (role === 'tecnico') {
+    alert('No autorizado para ver Hoja Diaria.');
+    return;
+  }
+
+  // Municipal: solo descarga (sin subir ni eliminar)
+  const isMunicipal = role === 'municipal';
+
+  document.getElementById('hojaModal')?.remove();
   const modal = document.createElement('div');
   modal.id = 'hojaModal';
   modal.className = 'falla-modal';
+
+  const uploaderHtml = isMunicipal ? '' : `
+        <div class="uploader" data-hoja="upload" style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:8px;">
+          <label class="btn-out" for="pdfInput">Seleccionar PDF(s)</label>
+          <input id="pdfInput" type="file" accept="application/pdf" multiple style="display:none;" />
+          <button id="uploadBtn" class="btn-out">Subir</button>
+        </div>
+  `;
+
   modal.innerHTML = `
     <div class="falla-modal-box" role="dialog" aria-modal="true" aria-labelledby="hojaTitle">
       <div class="falla-modal-header" style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
@@ -400,12 +442,7 @@ function openHojaDiariaModal(signalId){
         <button type="button" class="btn-out btn-danger btn-close" aria-label="Cerrar">&times;</button>
       </div>
       <div class="falla-modal-content">
-        <div class="uploader" style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:8px;">
-          <label class="btn-out" for="pdfInput">Seleccionar PDF(s)</label>
-          <input id="pdfInput" type="file" accept="application/pdf" multiple style="display:none;" />
-          <button id="uploadBtn" class="btn-out">Subir</button>
-        </div>
-
+        ${uploaderHtml}
         <div class="pdf-list-empty" style="margin-top:10px;">No hay PDFs publicados.</div>
         <ul class="pdf-list" style="margin-top:10px; list-style:none; padding:0;"></ul>
       </div>
@@ -436,55 +473,65 @@ function openHojaDiariaModal(signalId){
       return;
     }
     emptyEl.style.display = 'none';
-    listEl.innerHTML = items.map((it, idx) => `
-      <li data-idx="${idx}" style="display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px; border:1px solid #e5e7eb; border-radius:6px; margin-bottom:6px;">
-        <div style="display:flex; flex-direction:column;">
-          <strong>${it.name}</strong>
-          <small>${(it.size/1024).toFixed(1)} KB · ${new Date(it.addedAt).toLocaleString()}</small>
-        </div>
-        <div style="display:flex; gap:6px;">
+    listEl.innerHTML = items.map((it, idx) => {
+      const actions = `
           <a class="btn-out" href="${it.dataUrl}" download="${it.name}" target="_blank" rel="noopener">Descargar</a>
-          <button class="btn-out btn-danger del">Eliminar</button>
-        </div>
-      </li>
-    `).join('');
+          ${isMunicipal ? '' : '<button class="btn-out btn-danger del" data-action="delete-pdf">Eliminar</button>'}
+      `;
+      return `
+        <li data-idx="${idx}" style="display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px; border:1px solid #e5e7eb; border-radius:6px; margin-bottom:6px;">
+          <div style="display:flex; flex-direction:column;">
+            <strong>${it.name}</strong>
+            <small>${(it.size/1024).toFixed(1)} KB · ${new Date(it.addedAt).toLocaleString()}</small>
+          </div>
+          <div style="display:flex; gap:6px;">
+            ${actions}
+          </div>
+        </li>
+      `;
+    }).join('');
   }
 
   render();
 
-  listEl.addEventListener('click', e => {
-    const delBtn = e.target.closest('.del');
-    if (!delBtn) return;
-    const li = delBtn.closest('li');
-    const idx = parseInt(li.dataset.idx, 10);
-    const arr = load();
-    arr.splice(idx, 1);
-    save(arr);
-    render();
-  });
+  // Borrado solo para no-municipal
+  if (!isMunicipal) {
+    listEl.addEventListener('click', e => {
+      const delBtn = e.target.closest('.del');
+      if (!delBtn) return;
+      const li = delBtn.closest('li');
+      const idx = parseInt(li.dataset.idx, 10);
+      const arr = load();
+      arr.splice(idx, 1);
+      save(arr);
+      render();
+    });
+  }
 
-  const input = modal.querySelector('#pdfInput');
-  const uploadBtn = modal.querySelector('#uploadBtn');
-  let selectedFiles = [];
+  // Subida solo para no-municipal
+  if (!isMunicipal) {
+    const input = modal.querySelector('#pdfInput');
+    const uploadBtn = modal.querySelector('#uploadBtn');
+    let selectedFiles = [];
 
-  input.addEventListener('change', () => {
-    selectedFiles = Array.from(input.files || []);
-  });
+    input?.addEventListener('change', () => {
+      selectedFiles = Array.from(input.files || []);
+    });
 
-  uploadBtn.addEventListener('click', async () => {
-    if (!selectedFiles.length){ alert('Selecciona uno o más PDFs.'); return; }
-    // Nota: localStorage ~5MB total. Para producción usar backend.
-    const arr = load();
-    for (const file of selectedFiles){
-      if (file.type !== 'application/pdf') continue;
-      const dataUrl = await fileToDataUrl(file);
-      arr.push({ name: file.name, size: file.size, addedAt: Date.now(), dataUrl });
-    }
-    save(arr);
-    selectedFiles = [];
-    input.value = '';
-    render();
-  });
+    uploadBtn?.addEventListener('click', async () => {
+      if (!selectedFiles.length){ alert('Selecciona uno o más PDFs.'); return; }
+      const arr = load();
+      for (const file of selectedFiles){
+        if (file.type !== 'application/pdf') continue;
+        const dataUrl = await fileToDataUrl(file);
+        arr.push({ name: file.name, size: file.size, addedAt: Date.now(), dataUrl });
+      }
+      save(arr);
+      selectedFiles = [];
+      if (input) input.value = '';
+      render();
+    });
+  }
 
   function fileToDataUrl(file){
     return new Promise((resolve, reject) => {

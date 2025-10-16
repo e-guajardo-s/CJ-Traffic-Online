@@ -4,8 +4,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const form = document.querySelector('form');
   if (!form) return;
 
-  const VALID_EMAIL = 'correo@cjtraffic.cl';
-  const VALID_PASS  = 'CJtraffic2025';
+  // Permitir múltiples usuarios válidos con rol
+  const USERS = [
+    { email: 'correo@cjtraffic.cl',     password: 'CJtraffic2025',     role: 'admin' },
+    { email: 'correo@municipalidad.cl', password: 'Municipalidad2025', role: 'municipal' },
+    { email: 'tecnico@cjtraffic.cl',    password: 'Tecnico2025',       role: 'tecnico' },
+  ];
 
   form.addEventListener('submit', (e) => {
     e.preventDefault();
@@ -13,8 +17,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const email = rawEmail.toLowerCase();
     const pass  = form.elements.password.value;
 
-    if (email === VALID_EMAIL && pass === VALID_PASS) {
+    const user = USERS.find(u => u.email.toLowerCase() === email && u.password === pass);
+
+    if (user) {
       sessionStorage.setItem('cj_user_email', rawEmail);
+      sessionStorage.setItem('cj_user_role', user.role); // <- rol para permisos
       window.location.href = './dashboard.html';
     } else {
       showError('Usuario o contraseña incorrectos');
